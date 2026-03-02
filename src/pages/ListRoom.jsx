@@ -3,77 +3,81 @@ import { assets } from "../assets/assets";
 import icon from "../assets/dashboardIcon.svg";
 import icon1 from "../assets/addIcon.svg";
 import icon2 from "../assets/listIcon.svg";
-import room1 from "../assets/room1.jpg";
-import room2 from "../assets/room2.jpg";
-import room3 from "../assets/room3.jpg";
-import room4 from "../assets/room4.jpg";
 import { Link } from "react-router-dom";
+import { io } from "socket.io-client";
 
 const ListRoom = () => {
-  const imagesMap = { room1, room2, room3, room4 };
-  const renderImage = (imageKey) => imagesMap[imageKey] ?? room1;
-
   const [rooms, setRooms] = useState([]);
   const [successMsg, setSuccessMsg] = useState("");
   const [editingRoom, setEditingRoom] = useState(null);
   const [editName, setEditName] = useState("");
   const [editPrice, setEditPrice] = useState("");
 
+  // Fetch rooms from backend
   useEffect(() => {
     const fetchRooms = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/rooms");
+        const res = await fetch("http://localhost:3000/api/rooms");
         const data = await res.json();
         setRooms(data || []);
-      } catch (error) {
-        console.error("Error fetching rooms:", error);
+      } catch (err) {
+        console.error("Error fetching rooms:", err);
       }
     };
-
     fetchRooms();
+
+    // Socket.io for real-time updates (if new room added from AddRoom page)
+    const socket = io("http://localhost:3000");
+    socket.on("newRoom", (room) => {
+      setRooms((prev) => [room, ...prev]);
+      setSuccessMsg(`New room "${room.name}" added!`);
+      setTimeout(() => setSuccessMsg(""), 3000);
+    });
+
+    return () => socket.disconnect();
   }, []);
 
+  // Delete room
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this room?")) return;
 
     try {
-      await fetch(`http://localhost:5000/api/rooms/${id}`, {
+      await fetch(`http://localhost:3000/api/rooms/${id}`, {
         method: "DELETE",
       });
-
-      setRooms((prev) => prev.filter((room) => room.id !== id));
-
+      setRooms((prev) => prev.filter((room) => room._id !== id));
       setSuccessMsg("Room deleted successfully!");
       setTimeout(() => setSuccessMsg(""), 3000);
     } catch (err) {
-      console.error("Failed to delete room", err);
+      console.error("Delete failed", err);
     }
   };
 
+  // Save edited room
   const handleSave = async (id) => {
     try {
-      await fetch(`http://localhost:5000/api/rooms/${id}`, {
+      const res = await fetch(`http://localhost:3000/api/rooms/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: editName,
-          price: editPrice,
-        }),
+        body: JSON.stringify({ name: editName, price: editPrice }),
       });
 
-      const updated = rooms.map((room) =>
-        room.id === id
-          ? { ...room, name: editName, price: editPrice, HomePrice: editPrice }
-          : room
+      if (!res.ok) throw new Error("Update failed");
+
+      // Update frontend state
+      setRooms((prev) =>
+        prev.map((room) =>
+          room._id === id
+            ? { ...room, name: editName, price: editPrice }
+            : room,
+        ),
       );
 
-      setRooms(updated);
       setEditingRoom(null);
-
       setSuccessMsg("Room updated successfully!");
       setTimeout(() => setSuccessMsg(""), 3000);
-    } catch (error) {
-      console.error("Update failed", error);
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -96,7 +100,6 @@ const ListRoom = () => {
             <img className="min-h-6 min-w-6" src={icon} alt="Dashboard" />
             <p className="md:block hidden">Dashboard</p>
           </Link>
-
           <Link
             to="/owner-add-page"
             className="flex items-center py-3 px-4 md:px-8 gap-3 hover:bg-gray-100 text-gray-700"
@@ -104,7 +107,6 @@ const ListRoom = () => {
             <img className="min-h-6 min-w-6" src={icon1} alt="Add Room" />
             <p className="md:block hidden">Add Room</p>
           </Link>
-
           <Link
             to="/owner-list-page"
             className="flex items-center py-3 px-4 md:px-8 gap-3 bg-blue-600/10 border-r-4 border-blue-600 text-blue-600"
@@ -113,20 +115,21 @@ const ListRoom = () => {
             <p className="md:block hidden">List Room</p>
           </Link>
         </div>
-        {/* MAIN CONTENT */} {/* Success message */}
+
+        {/* MAIN CONTENT */}
         <div className="flex-1 p-4 pt-10 md:px-10 h-full">
           {successMsg && (
             <div className="bg-green-500 text-white p-2 rounded-md mb-4 fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
               {successMsg}
             </div>
           )}
+
           <h1 className="text-4xl md:text-[40px]">Room Listings</h1>
           <p className="text-gray-500 mt-2 max-w-174">
             Manage and edit all hotel rooms from one place.
           </p>
           <p className="text-gray-500 mt-4">Total Rooms: {rooms.length}</p>
 
-          {/* Room Table */}
           <div className="w-full max-w-3xl text-left border border-gray-300 rounded-lg max-h-96 overflow-y-scroll mt-4">
             <table className="w-full">
               <thead className="bg-gray-50 sticky top-0">
@@ -144,22 +147,22 @@ const ListRoom = () => {
               </thead>
               <tbody>
                 {rooms.map((room) => (
-                  <tr key={room.id} className="border-b hover:bg-gray-50">
+                  <tr key={room._id} className="border-b hover:bg-gray-50">
                     {/* Image */}
                     <td className="py-3 px-4">
-                      <img
-                        src={renderImage(room.imageKey)}
-                        alt={room.name}
-                        className="h-16 w-24 object-cover rounded-md"
-                      />
+                      {room.images && room.images.length > 0 ? (
+                        <img
+                          src={`http://localhost:3000/Uploads/${room.images[0]}`}
+                          alt={room.name}
+                          className="h-16 w-24 object-cover rounded-md"
+                        />
+                      ) : (
+                        <span className="text-gray-400">No Image</span>
+                      )}
                     </td>
-
-                    {/* Type (readonly) */}
-                    <td className="py-3 px-4">{room.type || "NO:("}</td>
-
-                    {/* Name */}
+                    <td className="py-3 px-4">{room.type || "N/A"}</td>
                     <td className="py-3 px-4">
-                      {editingRoom === room.id ? (
+                      {editingRoom === room._id ? (
                         <input
                           type="text"
                           value={editName}
@@ -170,26 +173,22 @@ const ListRoom = () => {
                         room.name
                       )}
                     </td>
-
-                    {/* Price (editable with $ or /) */}
                     <td className="py-3 px-4 text-center">
-                      {editingRoom === room.id ? (
+                      {editingRoom === room._id ? (
                         <input
                           type="text"
                           value={editPrice}
                           onChange={(e) => setEditPrice(e.target.value)}
-                          className="border px-2 py-1 rounded-md w-full"
+                          className="border px-2 py-1 rounded-md w-full text-center"
                         />
                       ) : (
                         room.price
                       )}
                     </td>
-
-                    {/* Actions */}
                     <td className="py-3 px-4 text-center">
-                      {editingRoom === room.id ? (
+                      {editingRoom === room._id ? (
                         <button
-                          onClick={() => handleSave(room.id)}
+                          onClick={() => handleSave(room._id)}
                           className="px-3 py-1 bg-green-600 text-white rounded-md mx-1 text-sm"
                         >
                           Save
@@ -197,7 +196,7 @@ const ListRoom = () => {
                       ) : (
                         <button
                           onClick={() => {
-                            setEditingRoom(room.id);
+                            setEditingRoom(room._id);
                             setEditName(room.name);
                             setEditPrice(room.price);
                           }}
@@ -207,7 +206,7 @@ const ListRoom = () => {
                         </button>
                       )}
                       <button
-                        onClick={() => handleDelete(room.id)}
+                        onClick={() => handleDelete(room._id)}
                         className="px-3 py-1 bg-red-600 text-white rounded-md mx-1 text-sm"
                       >
                         Delete
@@ -215,10 +214,9 @@ const ListRoom = () => {
                     </td>
                   </tr>
                 ))}
-
                 {rooms.length === 0 && (
                   <tr>
-                    <td className="py-4 text-center text-gray-500" colSpan={5}>
+                    <td colSpan={5} className="py-4 text-center text-gray-500">
                       No rooms found.
                     </td>
                   </tr>

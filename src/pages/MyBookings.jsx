@@ -11,28 +11,9 @@ const MyBookings = () => {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        // Fetch all bookings
-        const res = await fetch("http://localhost:5000/api/bookings");
+        const res = await fetch("http://localhost:3000/api/bookings");
         const data = await res.json();
-
-        // Populate roomName and sub from room details
-        const updatedBookings = await Promise.all(
-          data.map(async (booking) => {
-            const roomRes = await fetch(
-              `http://localhost:5000/api/rooms/${booking.roomId}`
-            );
-            const roomData = await roomRes.json();
-
-            return {
-              ...booking,
-              roomName: roomData.name,
-              sub: roomData.sub,
-              images: roomData.images, // optional, if you want to show images
-            };
-          })
-        );
-
-        setBookings(updatedBookings);
+        setBookings(data);
       } catch (err) {
         console.error("Error loading bookings", err);
       }
@@ -51,18 +32,17 @@ const MyBookings = () => {
   const handleDelete = async () => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/bookings/${selectedBookingId}`,
-        { method: "DELETE" }
+        `http://localhost:3000/api/bookings/${selectedBookingId}`,
+        { method: "DELETE" },
       );
-
       const data = await response.json();
       console.log(data.message);
 
-      setBookings((prev) => prev.filter((b) => b.id !== selectedBookingId));
+      // MongoDB _id fix
+      setBookings((prev) => prev.filter((b) => b._id !== selectedBookingId));
 
       setShowDeleteModal(false);
       setSelectedBookingId(null);
-
       setShowSuccessModal(true);
 
       setTimeout(() => {
@@ -91,12 +71,12 @@ const MyBookings = () => {
             <div className="flex items-center gap-4">
               <img
                 className="w-20 h-20 rounded-xl object-cover"
-                src={`http://localhost:5000${booking.images[0]}`}
+                src={`http://localhost:3000/Uploads/${booking.roomImage}`}
                 alt={booking.roomName}
               />
               <div>
                 <h2 className="font-semibold">{booking.roomName}</h2>
-                <p className="text-gray-500 text-sm">{booking.sub}</p>
+                <p className="text-gray-500 text-sm">{booking.roomType}</p>
                 <p className="text-gray-500 text-sm">{booking.guests} Guests</p>
               </div>
             </div>
@@ -106,11 +86,11 @@ const MyBookings = () => {
               <p>Check-Out: {booking.checkOut}</p>
             </div>
 
-            <div className="font-medium">{booking.price}</div>
+            <div className="font-medium">${booking.price}</div>
 
             <button
               onClick={() =>
-                openDeleteModal(booking.id, booking.roomName, booking.sub)
+                openDeleteModal(booking._id, booking.roomName, booking.roomType)
               }
               className="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600"
             >
@@ -127,20 +107,17 @@ const MyBookings = () => {
             onClick={() => setShowDeleteModal(false)}
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
           />
-
-          <div className="relative bg-white rounded-xl p-6 w-[90%] max-w-md transform transition-all duration-300 scale-100 opacity-100">
+          <div className="relative bg-white rounded-xl p-6 w-[90%] max-w-md transform transition-all duration-300">
             <h2 className="text-xl font-semibold text-gray-800">
               Delete Booking
             </h2>
-
             <p className="text-gray-600 mt-2">
               Are you sure you want to delete{" "}
               <span className="font-semibold text-gray-800">
-                {selectedRoomName} {selectedRoomSub}
+                {selectedRoomName} ({selectedRoomSub})
               </span>
               ? This action cannot be undone.
             </p>
-
             <div className="flex justify-end gap-3 mt-6">
               <button
                 onClick={() => setShowDeleteModal(false)}
@@ -148,7 +125,6 @@ const MyBookings = () => {
               >
                 Cancel
               </button>
-
               <button
                 onClick={handleDelete}
                 className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
@@ -164,16 +140,13 @@ const MyBookings = () => {
       {showSuccessModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
-
-          <div className="relative bg-white rounded-xl p-6 w-[90%] max-w-sm text-center transform transition-all duration-300 scale-100 opacity-100">
+          <div className="relative bg-white rounded-xl p-6 w-[90%] max-w-sm text-center transform transition-all duration-300">
             <div className="mx-auto w-14 h-14 flex items-center justify-center rounded-full bg-green-100 text-green-600 text-2xl">
               ✓
             </div>
-
             <h2 className="text-xl font-semibold text-gray-800 mt-4">
               Booking Deleted
             </h2>
-
             <p className="text-gray-600 mt-2">
               Your booking for{" "}
               <span className="font-semibold text-gray-800">

@@ -1,72 +1,70 @@
 import React, { useState } from "react";
-import { assets } from "../assets/assets";
+import axios from "axios";
+import { Link, useNavigate } from "react-router-dom";
 import icon from "../assets/dashboardIcon.svg";
 import icon1 from "../assets/addIcon.svg";
 import icon2 from "../assets/listIcon.svg";
-import { Link } from "react-router-dom";
+import { assets } from "../assets/assets";
 
 const AddRoom = () => {
-  const [images, setImages] = useState([null, null, null, null]); 
+  const navigate = useNavigate();
+  const [roomName, setRoomName] = useState("");
   const [roomType, setRoomType] = useState("");
   const [price, setPrice] = useState("");
   const [amenities, setAmenities] = useState([]);
-  const [roomName, setRoomName] = useState("");
+  const [images, setImages] = useState([]);
   const [successMsg, setSuccessMsg] = useState("");
 
-  const handleImageUpload = (e, index) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const updated = [...images];
-    updated[index] = URL.createObjectURL(file); 
-    setImages(updated);
-  };
-
   const toggleAmenity = (item) => {
-    if (amenities.includes(item)) {
-      setAmenities(amenities.filter((a) => a !== item));
-    } else {
-      setAmenities([...amenities, item]);
-    }
+    setAmenities((prev) =>
+      prev.includes(item) ? prev.filter((a) => a !== item) : [...prev, item],
+    );
   };
 
-  const addRoom = async (e) => {
+  const handleFileChange = (e) => {
+    setImages([...e.target.files]); // multiple files
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!roomType || !price || !images[0]) {
+    if (!roomName || !roomType || !price) {
       alert("Please fill all required fields");
       return;
     }
 
-    const formData = new FormData();
-    formData.append("name", roomName);
-    formData.append("type", roomType);
-    formData.append("price", price);
-    formData.append("amenities", JSON.stringify(amenities));
-
-    const imgInput = document.querySelector("#img0");
-    formData.append("image", imgInput.files[0]);
-
     try {
-      const res = await fetch("http://localhost:5000/api/rooms", {
-        method: "POST",
-        body: formData,
-      });
+      const formData = new FormData();
+      formData.append("name", roomName);
+      formData.append("roomType", roomType);
+      formData.append("price", price);
+      formData.append("amenities", JSON.stringify(amenities));
+      images.forEach((img) => formData.append("images", img));
 
-      const data = await res.json();
+      const res = await axios.post(
+        "http://localhost:3000/api/rooms",
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } },
+      );
 
-      if (res.ok) {
-        setSuccessMsg(`"Room added successfully!`);
-        setTimeout(() => setSuccessMsg(""), 3000);
+      console.log("Room added:", res.data);
+      setSuccessMsg("Room added successfully!");
 
-      } else {
-        alert(data.message || "Failed to add room");
-      }
-    } catch (error) {
-      console.error("Add room error:", error);
+      setTimeout(() => {
+        setSuccessMsg("");
+        navigate("/rooms");
+      }, 1500);
+
+      setRoomName("");
+      setRoomType("");
+      setPrice("");
+      setAmenities([]);
+      setImages([]);
+    } catch (err) {
+      console.error(err);
+      alert("Error adding room");
     }
   };
-
 
   return (
     <div className="flex flex-col h-screen">
@@ -79,134 +77,141 @@ const AddRoom = () => {
 
       <div className="flex h-full">
         {/* SIDEBAR */}
-        <div className="md:w-64 w-16 border-r h-full text-base border-gray-300 pt-4 flex flex-col">
+        <div className="md:w-64 w-16 border-r h-full border-gray-300 pt-4 flex flex-col">
           <Link
             to="/owner"
-            className="flex items-center py-3 px-4 md:px-8 gap-3 hover:bg-gray-100 text-gray-700"
+            className="flex items-center py-3 px-4 md:px-8 gap-3 hover:bg-gray-100"
           >
-            <img className="min-h-6 min-w-6" src={icon} alt="Dashboard" />
-            <p className="md:block hidden">Dashboard</p>
+            <img src={icon} className="min-w-6" />
+            <p className="hidden md:block">Dashboard</p>
           </Link>
 
           <Link
             to="/owner-add-page"
             className="flex items-center py-3 px-4 md:px-8 gap-3 bg-blue-600/10 border-r-4 border-blue-600 text-blue-600"
           >
-            <img className="min-h-6 min-w-6" src={icon1} alt="Add Room" />
-            <p className="md:block hidden">Add Room</p>
+            <img src={icon1} className="min-w-6" />
+            <p className="hidden md:block">Add Room</p>
           </Link>
 
           <Link
             to="/owner-list-page"
-            className="flex items-center py-3 px-4 md:px-8 gap-3 hover:bg-gray-100 text-gray-700"
+            className="flex items-center py-3 px-4 md:px-8 gap-3 hover:bg-gray-100"
           >
-            <img className="min-h-6 min-w-6" src={icon2} alt="List Room" />
-            <p className="md:block hidden">List Room</p>
+            <img src={icon2} className="min-w-6" />
+            <p className="hidden md:block">List Room</p>
           </Link>
         </div>
 
         {/* MAIN CONTENT */}
-        <div className="flex-1 p-4 pt-10 md:px-10 h-full">
+        <div className="flex-1 p-6 md:px-10">
           {successMsg && (
-            <div className="bg-green-500 text-white p-2 rounded-md mb-4 fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
+            <div className="bg-green-500 text-white px-4 py-2 rounded mb-4">
               {successMsg}
             </div>
           )}
 
-          <form onSubmit={addRoom}>
-            <h1 className="text-4xl md:text-[40px]">Add Room</h1>
+          <form onSubmit={handleSubmit}>
+            <h1 className="text-4xl">Add Room</h1>
             <p className="text-gray-500 mt-2">
-              Fill in the details to add a new room.
+              Fill the details to add a new room
             </p>
 
-            {/* Images */}
-            <p className="text-gray-800 mt-10">Images</p>
-            <div className="grid grid-cols-2 sm:flex gap-4 my-2 flex-wrap">
-              {[0, 1, 2, 3].map((i) => (
-                <label key={i} htmlFor={`img${i}`} className="cursor-pointer">
-                  {images[i] ? (
+            {/* ROOM NAME */}
+            <p className="mt-6">Room Name</p>
+            <input
+              className="border p-2 rounded w-full max-w-sm"
+              placeholder="Enter room name"
+              value={roomName}
+              onChange={(e) => setRoomName(e.target.value)}
+              required
+            />
+
+            {/* ROOM TYPE */}
+            <p className="mt-4">Room Type</p>
+            <select
+              className="border p-2 rounded w-full max-w-sm"
+              value={roomType}
+              onChange={(e) => setRoomType(e.target.value)}
+              required
+            >
+              <option value="">Select type</option>
+              <option>Single Bed</option>
+              <option>Double Bed</option>
+              <option>Luxury Room</option>
+              <option>Family Suite</option>
+            </select>
+
+            {/* PRICE */}
+            <p className="mt-4">Price / night</p>
+            <input
+              type="number"
+              className="border p-2 rounded w-40"
+              placeholder="0"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              required
+            />
+
+            {/* IMAGES */}
+            {/* <p className="mt-4">Room Images (up to 4)</p> */}
+            {/* <input type="file" multiple onChange={handleFileChange} /> */}
+            {/* IMAGES */}
+            <p className="mt-4">Room Images (up to 4)</p>
+            <div className="flex gap-4 mt-2">
+              {[0, 1, 2, 3].map((index) => (
+                <div
+                  key={index}
+                  className="w-24 h-24 border-2 border-dashed border-gray-400 rounded flex items-center justify-center cursor-pointer relative"
+                  onClick={() =>
+                    document.getElementById(`imageInput${index}`).click()
+                  }
+                >
+                  {images[index] ? (
                     <img
-                      src={images[i]}
-                      className="h-28 w-32 object-cover rounded-md border"
+                      src={URL.createObjectURL(images[index])}
+                      alt={`room ${index}`}
+                      className="w-full h-full object-cover rounded"
                     />
                   ) : (
-                    <div className="h-28 w-32 border rounded-md flex items-center justify-center">
-                      Upload
-                    </div>
+                    <span className="text-3xl text-gray-400">+</span>
                   )}
                   <input
-                    id={`img${i}`}
+                    id={`imageInput${index}`}
                     type="file"
                     accept="image/*"
                     className="hidden"
-                    onChange={(e) => handleImageUpload(e, i)}
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        const newImages = [...images];
+                        newImages[index] = file;
+                        setImages(newImages);
+                      }
+                    }}
                   />
+                </div>
+              ))}
+            </div>
+
+            {/* AMENITIES */}
+            <p className="mt-4">Amenities</p>
+            <div className="flex flex-col gap-2 text-gray-600">
+              {["Free Wifi", "Free Breakfast", "Room Service"].map((item) => (
+                <label key={item} className="flex gap-2">
+                  <input
+                    type="checkbox"
+                    checked={amenities.includes(item)}
+                    onChange={() => toggleAmenity(item)}
+                  />
+                  {item}
                 </label>
               ))}
             </div>
 
-            {/* Room Info */}
-            <div className="w-full flex max-sm:flex-col sm:gap-4 mt-4">
-              <div className="flex-1 max-w-48">
-                <p className="text-gray-800 mt-4">Room Name</p>
-                <input
-                  type="text"
-                  placeholder="Enter Room Name"
-                  className="border border-gray-300 mt-1 rounded p-2 w-full max-w-64"
-                  value={roomName}
-                  onChange={(e) => setRoomName(e.target.value)}
-                />
-
-                <p className="text-gray-800 mt-4">Room Type</p>
-                <select
-                  className="border opacity-70 border-gray-300 mt-1 rounded p-2 w-full"
-                  value={roomType}
-                  onChange={(e) => setRoomType(e.target.value)}
-                >
-                  <option value="">Select Room Type</option>
-                  <option value="Single Bed">Single Bed</option>
-                  <option value="Double Bed">Double Bed</option>
-                  <option value="King Bed">King Bed</option>
-                  <option value="Luxury Room">Luxury Room</option>
-                  <option value="Family Suite">Family Suite</option>
-                </select>
-              </div>
-
-              <div>
-                <p className="mt-4 text-gray-800">
-                  Price <span className="text-xs">/night</span>
-                </p>
-                <input
-                  placeholder="0"
-                  className="border border-gray-300 mt-1 rounded p-2 w-24"
-                  type="number"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                />
-              </div>
-            </div>
-
-            {/* Amenities */}
-            <p className="text-gray-800 mt-4">Amenities</p>
-            <div className="flex flex-col flex-wrap mt-1 text-gray-400 max-w-sm">
-              {["Free Wifi", "Free Breakfast", "Room Service"].map(
-                (item, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <input
-                      id={`am${index}`}
-                      type="checkbox"
-                      checked={amenities.includes(item)}
-                      onChange={() => toggleAmenity(item)}
-                    />
-                    <label htmlFor={`am${index}`}>{item}</label>
-                  </div>
-                )
-              )}
-            </div>
-
             <button
-              className="bg-blue-600 text-white px-8 py-2 rounded mt-8 cursor-pointer"
               type="submit"
+              className="bg-blue-600 text-white px-8 py-2 rounded mt-8"
             >
               Add Room
             </button>

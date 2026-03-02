@@ -5,6 +5,7 @@ import { assets } from "../assets/assets";
 import { useClerk, useUser, UserButton } from "@clerk/clerk-react";
 
 const BookIcon = () => (
+  
   <svg
     className="w-4 h-4 text-gray-700"
     aria-hidden="true"
@@ -25,10 +26,10 @@ const BookIcon = () => (
 );
 const Navbar = () => {
   const navLinks = [
-    { name: "Home", path: "/" },
+    { name: "Home", path: "/home" },
     { name: "Hotels", path: "/rooms" },
     { name: "Experience", path: "/review" },
-    { name: "About", path: "/" },
+    { name: "About", path: "/home" },
   ];
 
   const [isScrolled, setIsScrolled] = useState(false);
@@ -38,21 +39,35 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  useEffect(() => {
-    if (location.pathname !== "/") {
-      setIsScrolled(true);
-      return;
-    } else {
-      setIsScrolled(false);
-    }
-    setIsScrolled((prev) => (location.pathname !== "/" ? true : prev));
+ useEffect(() => {
+   // Sirf HOME page par transparent navbar
+   if (location.pathname !== "/home") {
+     setIsScrolled(true);
+     return;
+   }
 
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, [location.pathname]);
+   const handleScroll = () => {
+     setIsScrolled(window.scrollY > 10);
+   };
+
+   window.addEventListener("scroll", handleScroll);
+
+   // Initial check
+   handleScroll();
+
+   return () => window.removeEventListener("scroll", handleScroll);
+ }, [location.pathname]);
+ const token = localStorage.getItem("token");
+ let isAdmin = false;
+
+ if (token) {
+   try {
+     const payload = JSON.parse(atob(token.split(".")[1]));
+     isAdmin = payload.role === "admin";
+   } catch {
+     localStorage.removeItem("token");
+   }
+ }
   return (
     <nav
       className={`fixed top-0 left-0 w-full flex items-center justify-between px-4 md:px-16 lg:px-24 xl:px-32 transition-all duration-500 z-50 ${
@@ -88,14 +103,16 @@ const Navbar = () => {
             />
           </Link>
         ))}
-        <button
-          className={`border px-4 py-1 text-sm font-light rounded-full cursor-pointer ${
-            isScrolled ? "text-black" : "text-white"
-          } transition-all`}
-          onClick={() => navigate("/owner")}
-        >
-          dashboard
-        </button>
+        {isAdmin && (
+          <button
+            className={`border px-4 py-1 text-sm font-light rounded-full cursor-pointer ${
+              isScrolled ? "text-black" : "text-white"
+            } transition-all`}
+            onClick={() => navigate("/owner")}
+          >
+            dashboard
+          </button>
+        )}
       </div>
 
       {/* Desktop Right */}
@@ -171,12 +188,22 @@ const Navbar = () => {
           </Link>
         ))}
 
-        {user && (
+        {/* {user && (
           <button
             className="border px-4 py-1 text-sm font-light rounded-full cursor-pointer transition-all"
             onClick={() => navigate("/owner")}
           >
             Dashboard
+          </button>
+        )} */}
+        {isAdmin && (
+          <button
+            className={`border px-4 py-1 text-sm font-light rounded-full cursor-pointer ${
+              isScrolled ? "text-black" : "text-white"
+            } transition-all`}
+            onClick={() => navigate("/owner")}
+          >
+            dashboard
           </button>
         )}
 

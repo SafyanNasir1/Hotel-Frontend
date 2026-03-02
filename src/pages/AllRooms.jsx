@@ -2,17 +2,10 @@ import React, { useState, useEffect } from "react";
 import { assets } from "../assets/assets";
 import { Link } from "react-router-dom";
 
-import room1 from "../assets/room1.jpg";
-import room2 from "../assets/room3.jpg";
-import room3 from "../assets/room2.jpg";
-import room4 from "../assets/room4.jpg";
-
-const imagesMap = { room1, room2, room3, room4 };
-
 const AllRooms = () => {
   const [rooms, setRooms] = useState([]);
   const [openFilters, setOpenFilters] = useState(false);
-  
+
   const roomTypes = ["Single Bed", "Double Bed", "Luxury Room", "Family Suite"];
   const priceRanges = [
     "$ 0 to 400",
@@ -30,32 +23,20 @@ const AllRooms = () => {
   const [selectedPriceRanges, setSelectedPriceRanges] = useState([]);
   const [selectedSort, setSelectedSort] = useState("");
 
-
   useEffect(() => {
-  const fetchRooms = async () => {
-    try {
-      const res = await fetch("http://localhost:5000/api/rooms");
-      const data = await res.json();
+    const fetchRooms = async () => {
+      try {
+        const res = await fetch("http://localhost:3000/api/rooms");
+        const data = await res.json();
+        setRooms(data || []); // default empty array
+      } catch (err) {
+        console.error("Error fetching rooms:", err);
+        setRooms([]); // prevent crash
+      }
+    };
 
-      const mappedData = data.map((room, i) => ({
-        ...room,
-        imageKey: room.imageKey || `room${(i % 4) + 1}`,
-        bestSeller: room.bestSeller ?? false,
-        rating: room.rating ?? 4.5,
-        HomePrice: room.HomePrice || room.price || "$0/Night",
-        location: room.location || "Unknown Location",
-      }));
-
-      setRooms(mappedData);
-    } catch (err) {
-      console.error("Error fetching rooms:", err);
-    }
-  };
-
-  fetchRooms();
-}, []);
-
-  
+    fetchRooms();
+  }, []);
 
   const CheckBox = ({ label, selected = false, onchange = () => {} }) => (
     <label className="flex gap-2 items-center cursor-pointer mt-2 text-sm">
@@ -82,43 +63,10 @@ const AllRooms = () => {
     </label>
   );
 
-  const renderImage = (key) => imagesMap[key] || room1;
-
-  // --- Filter + Sort Logic ---
-  const filteredRooms = rooms
-    .filter((room) => {
-      // Room Type Filter
-      if (
-        selectedRoomTypes.length > 0 &&
-        !selectedRoomTypes.includes(room.sub.replace(/[()]/g, "").trim())
-      )
-        return false;
-
-      // Price Filter
-      if (selectedPriceRanges.length > 0) {
-        const price = Number(room.price.replace(/[^0-9]/g, ""));
-        const priceMatch = selectedPriceRanges.some((range) => {
-          const [min, max] = range.replace(/\$/g, "").split(" to ").map(Number);
-          return price >= min && price <= max;
-        });
-        if (!priceMatch) return false;
-      }
-
-      return true;
-    })
-    .sort((a, b) => {
-      const priceA = Number(a.price.replace(/[^0-9]/g, ""));
-      const priceB = Number(b.price.replace(/[^0-9]/g, ""));
-      if (selectedSort === "Price Low to High") return priceA - priceB;
-      if (selectedSort === "Price High to Low") return priceB - priceA;
-      if (selectedSort === "Newest First") return b.id.localeCompare(a.id);
-      return 0;
-    });
-
-  // --- Star Renderer ---
   const renderStars = (rating) => {
-    const fullStars = Math.floor(rating);
-    const halfStar = rating % 1 >= 0.5 ? 1 : 0;
+    const safeRating = Number(rating || 0);
+    const fullStars = Math.floor(safeRating);
+    const halfStar = safeRating % 1 >= 0.5 ? 1 : 0;
     const emptyStars = 5 - fullStars - halfStar;
 
     return (
@@ -140,6 +88,37 @@ const AllRooms = () => {
     );
   };
 
+  const filteredRooms = rooms
+    .filter((room) => {
+      if (!room) return false;
+
+      if (
+        selectedRoomTypes.length > 0 &&
+        !selectedRoomTypes.includes(room.roomType)
+      )
+        return false;
+
+      if (selectedPriceRanges.length > 0) {
+        const price = Number(room?.price || 0);
+        const priceMatch = selectedPriceRanges.some((range) => {
+          const [min, max] = range.replace(/\$/g, "").split(" to ").map(Number);
+          return price >= min && price <= max;
+        });
+        if (!priceMatch) return false;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      const priceA = Number(a?.price || 0);
+      const priceB = Number(b?.price || 0);
+      if (selectedSort === "Price Low to High") return priceA - priceB;
+      if (selectedSort === "Price High to Low") return priceB - priceA;
+      if (selectedSort === "Newest First")
+        return (b?._id || "").localeCompare(a?._id || "");
+      return 0;
+    });
+
   return (
     <div className="flex flex-col-reverse lg:flex-row items-start justify-between pt-28 md:pt-35 px-4 md:px-16 lg:px-24 xl:px-32">
       {/* Rooms List */}
@@ -152,57 +131,67 @@ const AllRooms = () => {
           </p>
         </div>
 
-        {filteredRooms.map((room) => (
-          <Link key={room.id} to={`/room/${room.id}`}>
-            <div className="flex flex-col md:flex-row items-start py-10 gap-6 border-b border-gray-300 transition-all duration-300 hover:scale-[1.03] hover:shadow-xl">
-              <img
-                src={renderImage(room.imageKey)}
-                alt={room.name}
-                className="max-h-65 md:w-1/2 rounded-xl shadow-lg object-cover cursor-pointer"
-              />
-              <div className="md:w-1/2 flex flex-col gap-2">
-                <p className="text-gray-500">New York</p>
-                <p className="text-gray-800 text-3xl font-playfair cursor-pointer">
-                  {room.name} {room.sub}
-                </p>
-                <div className="flex items-center">
-                  {renderStars(room.rating)}
-                  <p className="ml-2">{room.review}</p>
-                </div>
-                <div className="flex items-center gap-1 text-gray-500 mt-2 text-sm">
-                  <img src={assets.locationIcon} alt="location" />
-                  <span>{room.location}</span>
-                </div>
+        {filteredRooms?.length > 0 ? (
+          filteredRooms.map((room) => (
+            // <Link
+            //   key={room?._id || Math.random()}
+            //   to={`/room/${room?._id || ""}`}
+            // >
+            <Link key={room._id} to={`/room/${room._id}`}>
+              <div className="flex flex-col md:flex-row items-start py-10 gap-6 border-b border-gray-300 transition-all duration-300 hover:scale-[1.03] hover:shadow-xl">
+                <img
+                  src={
+                    room?.images?.length > 0
+                      ? `http://localhost:3000/Uploads/${room.images[0]}`
+                      : assets.placeholderImage
+                  }
+                  alt={room?.name || "Room"}
+                  className="max-h-65 md:w-1/2 rounded-xl shadow-lg object-cover cursor-pointer"
+                />
 
-                <div className="flex flex-wrap items-center mt-3 mb-6 gap-4">
-                  {room.wifi && (
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#F5F5FF]/70">
-                      <img src={assets.freeWifiIcon} alt="wifi" />
-                      <p className="text-xs">{room.wifi}</p>
-                    </div>
-                  )}
-                  {room.breakFAst && (
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#F5F5FF]/70">
-                      <img src={assets.freeBreakfastIcon} alt="" />
-                      <p className="text-xs">{room.breakFAst}</p>
-                    </div>
-                  )}
-                  {room.RoomService && (
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#F5F5FF]/70">
-                      <img src={assets.roomServiceIcon} alt="room-service" />
-                      <p className="text-xs">{room.RoomService}</p>
-                    </div>
-                  )}
+                <div className="md:w-1/2 flex flex-col gap-2">
+                  <p className="text-gray-500">
+                    {room?.location || "Unknown Location"}
+                  </p>
+                  <p className="text-gray-800 text-3xl font-playfair cursor-pointer">
+                    {room?.name || "Unnamed Room"} ({room?.roomType || "N/A"})
+                  </p>
+                  <div className="flex items-center">
+                    {renderStars(room?.rating)}
+                    <p className="ml-2">{room?.review || 0}</p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center mt-3 mb-6 gap-4">
+                    {room?.amenities?.includes("Free Wifi") && (
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#F5F5FF]/70">
+                        <img src={assets.freeWifiIcon} alt="wifi" />
+                        <p className="text-xs">Free Wifi</p>
+                      </div>
+                    )}
+                    {room?.amenities?.includes("Free Breakfast") && (
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#F5F5FF]/70">
+                        <img src={assets.freeBreakfastIcon} alt="breakfast" />
+                        <p className="text-xs">Free Breakfast</p>
+                      </div>
+                    )}
+                    {room?.amenities?.includes("Room Service") && (
+                      <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#F5F5FF]/70">
+                        <img src={assets.roomServiceIcon} alt="room-service" />
+                        <p className="text-xs">Room Service</p>
+                      </div>
+                    )}
+                  </div>
                   <p className="text-xl font-medium text-gray-700">
-                    {room.price}
+                    ${room?.price || "N/A"}{" "}
+                    <span className="text-xl text-gray-500 text-base">
+                      /night
+                    </span>
                   </p>
                 </div>
               </div>
-            </div>
-          </Link>
-        ))}
-
-        {filteredRooms.length === 0 && (
+            </Link>
+          ))
+        ) : (
           <p>No rooms match the selected filters.</p>
         )}
       </div>
@@ -232,9 +221,7 @@ const AllRooms = () => {
         </div>
 
         <div
-          className={`overflow-hidden transition-all duration-700 ${
-            openFilters ? "h-auto" : "h-0 lg:h-auto"
-          }`}
+          className={`overflow-hidden transition-all duration-700 ${openFilters ? "h-auto" : "h-0 lg:h-auto"}`}
         >
           <div className="px-5 pt-5">
             <p className="font-medium text-gray-800 pb-2">Room Type</p>
@@ -248,7 +235,7 @@ const AllRooms = () => {
                     setSelectedRoomTypes([...selectedRoomTypes, label]);
                   else
                     setSelectedRoomTypes(
-                      selectedRoomTypes.filter((r) => r !== label)
+                      selectedRoomTypes.filter((r) => r !== label),
                     );
                 }}
               />
@@ -267,7 +254,7 @@ const AllRooms = () => {
                     setSelectedPriceRanges([...selectedPriceRanges, label]);
                   else
                     setSelectedPriceRanges(
-                      selectedPriceRanges.filter((r) => r !== label)
+                      selectedPriceRanges.filter((r) => r !== label),
                     );
                 }}
               />
@@ -292,4 +279,3 @@ const AllRooms = () => {
 };
 
 export default AllRooms;
-
