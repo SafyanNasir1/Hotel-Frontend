@@ -1,5 +1,8 @@
 import React from "react";
 import { assets } from "../assets/assets";
+import men from "../assets/men.png";
+import men2 from "../assets/men2.avif";
+import mahi from "../assets/mahi.png";
 const Review = () => {
   return (
     <>
@@ -19,7 +22,7 @@ const Review = () => {
             <div className="flex items-center gap-3 ">
               <img
                 className="w-12 h-12 rounded-full"
-                src="./src/assets/men.png"
+                src={men}
                 alt="men-profile"
               />
               <div>
@@ -65,7 +68,7 @@ const Review = () => {
             <div className="flex items-center gap-3">
               <img
                 className="w-12 h-12 rounded-full"
-                src="./src/assets/passport-photo-man-caucasian-businessman-professional-attire-with-smile_817921-61353.avif"
+                src={men2}
                 alt="men-profile"
               />
               <div>
@@ -111,8 +114,8 @@ const Review = () => {
             <div className="flex items-center gap-3">
               <img
                 className="w-12 h-12 rounded-full"
-                src="./src/assets/photo-1701615004837-40d8573b6652.png"
-                alt="men-profile"
+                src={mahi}
+                alt="mahi-profile"
               />
               <div>
                 <p className="font-playfair text-xl">Sophia Lee</p>
