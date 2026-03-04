@@ -34,8 +34,7 @@ const AuthPage = () => {
 const handleLoginSubmit = async (e) => {
   e.preventDefault();
   try {
-    const res = await fetch(
-      "https://hotel-server-six.vercel.app/api/auth/login",
+    const res = await fetch("https://hotel-server-six.vercel.app/api/auth/login",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -65,8 +64,7 @@ const handleLoginSubmit = async (e) => {
 const handleSignupSubmit = async (e) => {
   e.preventDefault();
   try {
-    const res = await fetch(
-      "https://hotel-server-six.vercel.app/api/auth/signup",
+    const res = await fetch("https://hotel-server-six.vercel.app/api/auth/signup",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
