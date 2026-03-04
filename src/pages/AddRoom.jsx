@@ -42,7 +42,7 @@ const AddRoom = () => {
       images.forEach((img) => formData.append("images", img));
 
       const res = await axios.post(
-        "http://localhost:3000/api/rooms",
+        "http://hotel-server-six.vercel.app/api/rooms",
         formData,
         { headers: { "Content-Type": "multipart/form-data" } },
       );

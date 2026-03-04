@@ -11,7 +11,9 @@ const MyBookings = () => {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const res = await fetch("http://localhost:3000/api/bookings");
+        const res = await fetch(
+          "http://hotel-server-six.vercel.app/api/bookings",
+        );
         const data = await res.json();
         setBookings(data);
       } catch (err) {
@@ -32,7 +34,7 @@ const MyBookings = () => {
   const handleDelete = async () => {
     try {
       const response = await fetch(
-        `http://localhost:3000/api/bookings/${selectedBookingId}`,
+        `http://hotel-server-six.vercel.app/api/bookings/${selectedBookingId}`,
         { method: "DELETE" },
       );
       const data = await response.json();
@@ -71,7 +73,7 @@ const MyBookings = () => {
             <div className="flex items-center gap-4">
               <img
                 className="w-20 h-20 rounded-xl object-cover"
-                src={`http://localhost:3000/Uploads/${booking.roomImage}`}
+                src={`http://hotel-server-six.vercel.app/Uploads/${booking.roomImage}`}
                 alt={booking.roomName}
               />
               <div>

@@ -18,7 +18,9 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchBookings = async () => {
       try {
-        const res = await fetch("http://localhost:3000/api/bookings");
+        const res = await fetch(
+          "http://hotel-server-six.vercel.app/api/bookings",
+        );
         const data = await res.json();
         setBookings(data || []);
 
@@ -35,7 +37,7 @@ const Dashboard = () => {
     fetchBookings();
 
     // Socket.IO real-time updates
-    const socket = io("http://localhost:3000");
+    const socket = io("https://hotel-server-six.vercel.app");
     socket.on("newBooking", ({ booking, review }) => {
       setBookings((prev) => [booking, ...prev]);
       setTotalRevenue(

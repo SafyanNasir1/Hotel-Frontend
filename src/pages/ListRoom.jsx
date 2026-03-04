@@ -17,7 +17,7 @@ const ListRoom = () => {
   useEffect(() => {
     const fetchRooms = async () => {
       try {
-        const res = await fetch("http://localhost:3000/api/rooms");
+        const res = await fetch("http://hotel-server-six.vercel.app/api/rooms");
         const data = await res.json();
         setRooms(data || []);
       } catch (err) {
@@ -27,7 +27,7 @@ const ListRoom = () => {
     fetchRooms();
 
     // Socket.io for real-time updates (if new room added from AddRoom page)
-    const socket = io("http://localhost:3000");
+    const socket = io("https://hotel-server-six.vercel.app");
     socket.on("newRoom", (room) => {
       setRooms((prev) => [room, ...prev]);
       setSuccessMsg(`New room "${room.name}" added!`);
@@ -42,7 +42,7 @@ const ListRoom = () => {
     if (!window.confirm("Are you sure you want to delete this room?")) return;
 
     try {
-      await fetch(`http://localhost:3000/api/rooms/${id}`, {
+      await fetch(`http://hotel-server-six.vercel.app/api/rooms/${id}`, {
         method: "DELETE",
       });
       setRooms((prev) => prev.filter((room) => room._id !== id));
@@ -56,7 +56,7 @@ const ListRoom = () => {
   // Save edited room
   const handleSave = async (id) => {
     try {
-      const res = await fetch(`http://localhost:3000/api/rooms/${id}`, {
+      const res = await fetch(`http://hotel-server-six.vercel.app/api/rooms/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: editName, price: editPrice }),
@@ -152,7 +152,7 @@ const ListRoom = () => {
                     <td className="py-3 px-4">
                       {room.images && room.images.length > 0 ? (
                         <img
-                          src={`http://localhost:3000/Uploads/${room.images[0]}`}
+                          src={`http://hotel-server-six.vercel.app/Uploads/${room.images[0]}`}
                           alt={room.name}
                           className="h-16 w-24 object-cover rounded-md"
                         />

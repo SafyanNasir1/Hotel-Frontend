@@ -15,7 +15,9 @@ const RoomDetails = () => {
   useEffect(() => {
     const fetchRoom = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/api/rooms/${id}`);
+        const res = await fetch(
+          `http://hotel-server-six.vercel.app/api/rooms/${id}`,
+        );
         const data = await res.json();
 
         if (!data || data.message) return;
@@ -23,7 +25,7 @@ const RoomDetails = () => {
         setRoom(data);
 
         if (data.images?.length > 0) {
-          setMainImage(`http://localhost:3000/Uploads/${data.images[0]}`);
+          setMainImage(`http://hotel-server-six.vercel.app/Uploads/${data.images[0]}`);
         }
       } catch (err) {
         console.error(err);
@@ -36,7 +38,7 @@ const RoomDetails = () => {
   if (!room) return <p className="p-10 text-center">Room not found</p>;
 
   const images =
-    room.images?.map((img) => `http://localhost:3000/Uploads/${img}`) || [];
+    room.images?.map((img) => `http://hotel-server-six.vercel.app/Uploads/${img}`) || [];
 
   /* ================= IMAGE SWITCH ================= */
   const handleImageClick = (img) => {
@@ -79,7 +81,7 @@ const RoomDetails = () => {
     const totalPrice = nights * room.price;
 
     try {
-      const res = await fetch("http://localhost:3000/api/bookings", {
+      const res = await fetch("http://hotel-server-six.vercel.app/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

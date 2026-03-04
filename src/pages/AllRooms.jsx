@@ -26,7 +26,7 @@ const AllRooms = () => {
   useEffect(() => {
     const fetchRooms = async () => {
       try {
-        const res = await fetch("http://localhost:3000/api/rooms");
+        const res = await fetch("http://hotel-server-six.vercel.app/api/rooms");
         const data = await res.json();
         setRooms(data || []); // default empty array
       } catch (err) {

@@ -8,7 +8,7 @@ const HeroRoom = () => {
   useEffect(() => {
     const fetchRooms = async () => {
       try {
-        const res = await fetch("http://localhost:3000/api/rooms");
+        const res = await fetch("http://hotel-server-six.vercel.app/api/rooms");
         const data = await res.json();
         setRooms(data || []);
       } catch (err) {
@@ -34,7 +34,7 @@ const HeroRoom = () => {
           rooms.map((room) => {
             const image =
               room.images && room.images.length > 0
-                ? `http://localhost:3000/Uploads/${room.images[0]}`
+                ? `https://hotel-server-six.vercel.app/Uploads/${room.images[0]}`
                 : assets.placeholderImage;
 
             return (
